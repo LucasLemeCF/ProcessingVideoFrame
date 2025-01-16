@@ -1,13 +1,78 @@
+import sys
+
+sys.path.append('/opt/bin/')
+
 import json
 import os
 import zipfile
-
 import boto3
 import pyshorteners
 import requests
 from botocore.exceptions import NoCredentialsError
 
 s3_client = boto3.client('s3')
+bucket_name = 'lucas-leme-teste'
+email_sender = "videoframeprofiap@gmail.com"
+email_api_key = "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"
+url_smtp = "https://api.brevo.com/v3/smtp/email"
+
+def lambda_handler(event, context):
+    for message in event['Records']:
+        response = process_message(message)
+
+        if not response['statusCode'] in [200, 201, 202]:
+            to_address = message['body']['to_address']
+            send_email_error(to_address)
+    
+    return response
+
+def process_message(message):
+    body_message = message['body']
+
+    try:
+        response = process_frames(body_message)
+    except Exception as err:
+        print("An error occurred")
+        raise err
+    
+    return response
+
+def process_frames(body_message):
+    object_key = body_message['object_key']
+    user_name = body_message['user_name']
+    to_address = body_message['to_address']
+    frame_rate = body_message['frame_rate']
+
+    download_path_bucket = f"entrada/{object_key}"
+    lambda_video_path = f"/tmp/{object_key}"
+    output_folder = "/tmp/frames"
+    zip_path = "/tmp/frames.zip"
+    output_zip_key = f"saida/{user_name}/{os.path.basename(zip_path)}"
+
+    if frame_rate > 0:
+        download_from_s3(bucket_name, download_path_bucket, lambda_video_path)
+        extract_frames(lambda_video_path, output_folder, frame_rate)
+        create_zip(output_folder, zip_path)
+        upload_to_s3(bucket_name, output_zip_key, zip_path)
+
+        long_url = generate_url(bucket_name, output_zip_key)
+        url_download = shorten_url(long_url)
+        
+        send_email(to_address, url_download)
+
+        return {
+            'statusCode': 200,
+            'body': json.dumps({ 
+                'message': 'Processing completed successfully!'
+            })
+        }
+    else :
+        return {
+            'statusCode': 400,
+            'body': json.dumps({ 
+                'message': 'Invalid frame rate number, must be greater than 0'
+            })
+        }
 
 def download_from_s3(bucket_name, object_key, download_path):
     try:
@@ -23,11 +88,11 @@ def upload_to_s3(bucket_name, output_zip_key, file_path):
     except NoCredentialsError:
         print("Credentials not available")
 
-def extract_frames(lambda_video_path, output_folder):
+def extract_frames(lambda_video_path, output_folder, frame_rate):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    os.system(f"ffmpeg.exe -i {lambda_video_path} -vf fps=1/20 {os.path.join(output_folder, 'frame_%04d.jpg')}")
+    os.system(f"/opt/bin/ffmpeg.exe -i {lambda_video_path} -vf fps=1/{frame_rate} {os.path.join(output_folder, 'frame_%04d.jpg')}")
 
 def create_zip(output_folder, zip_path):
     with zipfile.ZipFile(zip_path, 'w') as zipf:
@@ -53,32 +118,21 @@ def shorten_url(long_url):
     return short_url
 
 def send_email(destinatario, url_download):
-    # API Key do Brevo
-    api_key = "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"
-    url = "https://api.brevo.com/v3/smtp/email"
-
     headers = {
-        "api-key": api_key,
+        "api-key": email_api_key,
         "Content-Type": "application/json"
     }
 
-    # Dados do e-mail
     data = {
-        "sender": {"email": "videoframeprofiap@gmail.com"},
+        "sender": {"email": email_sender},
         "to": [{"email": destinatario}],
         "subject": "Video Frame Pro",
         "htmlContent": "<html><body><h1>Link para download do .zip: {}</h1></body></html>".format(url_download)
     }
 
     try:
-        # Enviar o e-mail
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url_smtp, headers=headers, json=data)
 
-        # Imprimir detalhes da resposta para diagnóstico
-        print("Código de status:", response.status_code)
-        print("Resposta completa:", response.json())
-
-        # Tratar status codes 202 e 201 como sucesso
         if response.status_code in [202, 201]:
             print("✅ E-mail enviado com sucesso!")
         else:
@@ -88,36 +142,27 @@ def send_email(destinatario, url_download):
     except Exception as e:
         print("❌ Erro na requisição:", str(e))
 
-def lambda_handler(event, context):
-    object_key = 'video_teste.mp4'
-    user_name = 'lucas'
-    to_address = 'lucasleme09@gmail.com'
-
-    bucket_name = 'lucas-leme-teste'
-
-    download_path_bucket = f"entrada/{object_key}"
-    lambda_video_path = f"/tmp/{object_key}"
-    output_folder = "/tmp/frames"
-    zip_path = "/tmp/frames.zip"
-    output_zip_key = f"saida/{user_name}/{os.path.basename(zip_path)}"
-
-    download_from_s3(bucket_name, download_path_bucket, lambda_video_path)
-    extract_frames(lambda_video_path, output_folder)
-    create_zip(output_folder, zip_path)
-    upload_to_s3(bucket_name, output_zip_key, zip_path)
-
-    long_url = generate_url(bucket_name, output_zip_key)
-    url_download = shorten_url(long_url)
-    
-    send_email(to_address, url_download)
-
-    return {
-        'statusCode': 200,
-        'body': json.dumps({ 
-            'message': 'Processing completed successfully!', 
-            'public_url': url_download 
-        })
+def send_email_error(destinatario):
+    headers = {
+        "api-key": email_api_key,
+        "Content-Type": "application/json"
     }
 
-if __name__ == "__main__":
-    lambda_handler()
+    data = {
+        "sender": {"email": email_sender},
+        "to": [{"email": destinatario}],
+        "subject": "Video Frame Pro",
+        "htmlContent": "<html><body><h1>Erro ao processar o video</h1></body></html>"
+    }
+
+    try:
+        response = requests.post(url_smtp, headers=headers, json=data)
+
+        if response.status_code in [202, 201]:
+            print("✅ E-mail de erro enviado.")
+        else:
+            print(f"❌ Erro ao enviar o e-mail de erro: {response.status_code}")
+            print(response.text)
+
+    except Exception as e:
+        print("❌ Erro na requisição:", str(e))
