@@ -1,0 +1,92 @@
+name: Terraform Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Passo para instalar dependências Python para cada Lambda
+      - name: Install Python dependencies for register
+        run: |
+          if [ -f ./src/register/requirements.txt ]; then
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -r ./src/register/requirements.txt
+          fi
+
+      - name: Install Python dependencies for login
+        run: |
+          if [ -f ./src/login/requirements.txt ]; then
+            python3 -m venv venv
+            source venv/bin/activate
+            pip install -r ./src/login/requirements.txt
+          fi
+
+      # Passo para empacotar a Lambda de registro em um arquivo ZIP
+      - name: Create ZIP file for register Lambda
+        run: |
+          mkdir -p lambda/register
+          cp -r ./src/register/* lambda/register/
+          cd lambda/register
+          zip -r register_lambda_function.zip .
+          cd ../../
+
+      # Passo para empacotar a Lambda de login em um arquivo ZIP
+      - name: Create ZIP file for login Lambda
+        run: |
+          mkdir -p lambda/login
+          cp -r ./src/login/* lambda/login/
+          cd lambda/login
+          zip -r login_lambda_function.zip .
+          cd ../../
+
+      # Verificar se os arquivos ZIP foram criados
+      - name: Check if ZIP files exist
+        run: |
+          if [ ! -f lambda/register/register_lambda_function.zip ]; then
+            echo "Register Lambda ZIP file not found!"
+            exit 1
+          fi
+          if [ ! -f lambda/login/login_lambda_function.zip ]; then
+            echo "Login Lambda ZIP file not found!"
+            exit 1
+          fi
+
+      # Terraform Init
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./infra
+
+      # Terraform Validate
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ./infra
+
+      # Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Terraform Refresh
+      - name: Terraform Refresh
+        run: terraform refresh -input=false
+        working-directory: ./infra
+
+      # Terraform Apply
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./infra
