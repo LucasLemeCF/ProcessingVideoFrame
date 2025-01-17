@@ -2,7 +2,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Função Lambda para processamento de frames
+# Função Lambda para processamento de frames.
 resource "aws_lambda_function" "register_user" {
   function_name = "frame_process_function" # Nome fixo da função Lambda
 
