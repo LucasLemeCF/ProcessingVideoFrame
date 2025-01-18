@@ -10,7 +10,7 @@ resource "aws_lambda_function" "register_user" {
   runtime = "python3.8"
   role    = aws_iam_role.lambda_process_role.arn
 
-  # Caminho para o código da função Lambda
+  # Caminho para o código da função Lambda.
   filename         = "../lambda/process/process_lambda_function.zip"
   source_code_hash = filebase64sha256("../lambda/process/process_lambda_function.zip")
 }
