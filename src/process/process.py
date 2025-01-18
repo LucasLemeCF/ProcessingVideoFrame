@@ -8,6 +8,7 @@ import zipfile
 import boto3
 import pyshorteners
 import requests
+import ffmpeg
 from botocore.exceptions import NoCredentialsError
 
 s3_client = boto3.client('s3')
@@ -92,7 +93,12 @@ def extract_frames(lambda_video_path, output_folder, frame_rate):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    os.system(f"/opt/bin/ffmpeg.exe -i {lambda_video_path} -vf fps=1/{frame_rate} {os.path.join(output_folder, 'frame_%04d.jpg')}")
+    (
+        ffmpeg
+        .input(lambda_video_path)
+        .output(os.path.join(output_folder, 'frame_%04d.jpg'), vf=f'fps=1/{frame_rate}')
+        .run()
+    )
 
 def create_zip(output_folder, zip_path):
     with zipfile.ZipFile(zip_path, 'w') as zipf:
