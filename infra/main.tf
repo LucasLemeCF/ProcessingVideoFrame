@@ -3,10 +3,10 @@ provider "aws" {
 }
 
 # Função Lambda para processamento de frames.
-resource "aws_lambda_function" "frame_process" {
+resource "aws_lambda_function" "register_user" {
   function_name = "frame_process_function" # Nome fixo da função Lambda
 
-  handler = "process.lambda_handler" # Atualizado para o handler da função de processamento
+  handler = "process.lambda_handler" # Atualizado para o handler da função de procesamento
   runtime = "python3.8"
   role    = aws_iam_role.lambda_process_role.arn
 
