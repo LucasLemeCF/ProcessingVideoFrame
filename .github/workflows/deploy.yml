@@ -16,31 +16,31 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v1
 
-      # Passo para instalar dependências Python para o Lambda
-      - name: Install Python dependencies for process
-        run: |
-          if [ -f ./src/process/requirements.txt ]; then
-            python3 -m venv venv
-            source venv/bin/activate
-            pip install -r ./src/process/requirements.txt
-          fi
-
-      # Passo para empacotar a Lambda de registro em um arquivo ZIP
+      # Passo para empacotar a Lambda com dependências
       - name: Create ZIP file for process Lambda
         run: |
           mkdir -p lambda/process
           cp -r ./src/process/* lambda/process/
           cd lambda/process
+          
+          # Instalar dependências diretamente no diretório
+          pip install -r ../../src/process/requirements.txt -t .
+          
+          # Criar o arquivo ZIP
           zip -r process_lambda_function.zip .
           cd ../../
 
-      # Verificar se os arquivos ZIP foram criados
+      # Verificar se o arquivo ZIP foi criado
       - name: Check if ZIP files exist
         run: |
           if [ ! -f lambda/process/process_lambda_function.zip ]; then
             echo "Process Lambda ZIP file not found!"
             exit 1
           fi
+
+      # Listar os arquivos no ZIP
+      - name: List files in ZIP
+        run: unzip -l lambda/process/process_lambda_function.zip
 
       # Terraform Init
       - name: Terraform Init
