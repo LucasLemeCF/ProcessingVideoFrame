@@ -6,9 +6,9 @@ import json
 import os
 import zipfile
 import boto3
-import pyshorteners
 import requests
 import ffmpeg
+import pyshorteners
 from botocore.exceptions import NoCredentialsError
 
 s3_client = boto3.client('s3')
