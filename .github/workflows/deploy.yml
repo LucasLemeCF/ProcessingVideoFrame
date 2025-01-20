@@ -26,18 +26,20 @@ jobs:
           # Instalar dependências diretamente no diretório
           pip install -r ../../src/process/requirements.txt -t .
           
+          # Verificar se há arquivos na pasta lambda/process
+          ls -l
+
           # Criar o arquivo ZIP
           zip -r process_lambda_function.zip .
           cd ../../
       
-      # Passo para baixar e empacotar o FFmpeg para a camada Lambda
       - name: Download and package FFmpeg for Lambda Layer
         run: |
-          mkdir -p layer/ffmpeg
-          cd layer/ffmpeg
-          wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-          tar -xvf ffmpeg-release-amd64-static.tar.xz --strip-components=1
-          zip -r ffmpeg.zip .
+          mkdir -p layer/ffmpeg &&
+          cd layer/ffmpeg &&
+          wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz &&
+          tar -xvf ffmpeg-release-amd64-static.tar.xz --strip-components=1 &&
+          zip -r ffmpeg.zip . &&
           cd ../../
 
       # Verificar se o arquivo ZIP foi criado
@@ -54,8 +56,8 @@ jobs:
 
       # Listar os arquivos no ZIP
       - name: List files in ZIP
-        run: 
-          unzip -l lambda/process/process_lambda_function.zip
+        run: |
+          unzip -l lambda/process/process_lambda_function.zip &&
           unzip -l layer/ffmpeg/ffmpeg.zip
 
       # Terraform Init
