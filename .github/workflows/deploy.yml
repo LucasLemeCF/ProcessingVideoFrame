@@ -23,13 +23,9 @@ jobs:
           cp -r ./src/process/* lambda/process/
           cd lambda/process
 
-          wget https://ffmpeg.org/releases/ffmpeg-4.4.tar.bz2
-          tar -xjf ffmpeg-4.4.tar.bz2
-          cd ffmpeg-4.4
-          ./configure
-          make
-          sudo make install
-          cd ..
+          # Instalar o FFmpeg
+          wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
+          tar xf ffmpeg-release-64bit-static.tar.xz
           
           # Instalar dependências diretamente no diretório
           pip install -r ../../src/process/requirements.txt -t .
