@@ -25,7 +25,7 @@ jobs:
 
           # Instalar o FFmpeg
           wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5
-          tar xf ffmpeg-release-64bit-static.tar.xz
+          tar xf ffmpeg-release-amd64-static.tar.xz.md5
           
           # Instalar dependências diretamente no diretório
           pip install -r ../../src/process/requirements.txt -t .
