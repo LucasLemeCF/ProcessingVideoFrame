@@ -33,11 +33,11 @@ jobs:
           zip -r process_lambda_function.zip .
           cd ../../
 
-      # Verificar se o arquivo ZIP do ffmpeg existe
-      - name: Check if FFmpeg ZIP file exists
+      # Verificar se o arquivo ZIP foi criado
+      - name: Check if ZIP files exist
         run: |
-          if [ ! -f ffmpeg.zip ]; then
-            echo "FFmpeg ZIP file not found!"
+          if [ ! -f lambda/process/process_lambda_function.zip ]; then
+            echo "Process Lambda ZIP file not found!"
             exit 1
           fi
 
