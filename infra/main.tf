@@ -2,13 +2,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Recurso da camada Lambda.
-resource "aws_lambda_layer_version" "ffmpeg_layer" {
-  filename            = "../ffmpeg.zip"
-  layer_name          = "ffmpeg_layer"
-  compatible_runtimes = ["python3.8"]
-}
-
 # Função Lambda para processamento de frames
 resource "aws_lambda_function" "register_user" {
   function_name = "frame_process_function" # Nome fixo da função Lambda
@@ -22,7 +15,10 @@ resource "aws_lambda_function" "register_user" {
   source_code_hash = filebase64sha256("../lambda/process/process_lambda_function.zip")
 
   # Configuração de camadas
-  layers = [aws_lambda_layer_version.ffmpeg_layer.arn]
+  layers = [
+    "arn:aws:lambda:us-east-1:145266761615:layer:ffmpeg-lambda-layer:1"
+  ]
+
 }
 
 # Role para Lambda
