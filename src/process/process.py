@@ -13,7 +13,7 @@ from botocore.exceptions import NoCredentialsError
 s3_client = boto3.client('s3')
 bucket_name = 'lucas-leme-teste'
 email_sender = "videoframeprofiap@gmail.com"
-email_api_key = os.getenv('EMAIL_API_KEY')
+email_api_key = "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"
 url_smtp = "https://api.brevo.com/v3/smtp/email"
 
 def lambda_handler(event, context):

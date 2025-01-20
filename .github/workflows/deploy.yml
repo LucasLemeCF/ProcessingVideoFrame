@@ -29,11 +29,6 @@ jobs:
           # Criar o arquivo ZIP
           zip -r process_lambda_function.zip .
           cd ../../
-      
-      - name: Set environment variables
-        env:
-          EMAIL_API_KEY: ${{ secrets.EMAIL_API_KEY }}
-        run: echo "Environment variables set"
 
       # Verificar se o arquivo ZIP foi criado
       - name: Check if ZIP files exist
