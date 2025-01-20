@@ -2,7 +2,7 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Recurso da camada Lambda
+# Recurso da camada Lambda.
 resource "aws_lambda_layer_version" "ffmpeg_layer" {
   filename            = "../ffmpeg.zip"
   layer_name          = "ffmpeg_layer"
