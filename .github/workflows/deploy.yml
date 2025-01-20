@@ -30,8 +30,9 @@ jobs:
           zip -r process_lambda_function.zip .
           cd ../../
       
+      # Passo para baixar e empacotar o FFmpeg para a camada Lambda
       - name: Download and package FFmpeg for Lambda Layer
-        run:
+        run: |
           mkdir -p layer/ffmpeg
           cd layer/ffmpeg
           wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
