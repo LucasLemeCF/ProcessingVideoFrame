@@ -6,15 +6,14 @@ import json
 import os
 import zipfile
 import boto3
-import requests
-import ffmpeg
 import pyshorteners
+import requests
 from botocore.exceptions import NoCredentialsError
 
 s3_client = boto3.client('s3')
 bucket_name = 'lucas-leme-teste'
 email_sender = "videoframeprofiap@gmail.com"
-email_api_key = "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"
+email_api_key = "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"
 url_smtp = "https://api.brevo.com/v3/smtp/email"
 
 def lambda_handler(event, context):
@@ -93,12 +92,7 @@ def extract_frames(lambda_video_path, output_folder, frame_rate):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     
-    (
-        ffmpeg
-        .input(lambda_video_path)
-        .output(os.path.join(output_folder, 'frame_%04d.jpg'), vf=f'fps=1/{frame_rate}')
-        .run()
-    )
+    os.system(f"/opt/bin/ffmpeg.exe -i {lambda_video_path} -vf fps=1/{frame_rate} {os.path.join(output_folder, 'frame_%04d.jpg')}")
 
 def create_zip(output_folder, zip_path):
     with zipfile.ZipFile(zip_path, 'w') as zipf:
