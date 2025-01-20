@@ -26,9 +26,6 @@ jobs:
           # Instalar dependências diretamente no diretório
           pip install -r ../../src/process/requirements.txt -t .
           
-          # Verificar se há arquivos na pasta lambda/process
-          ls -l
-
           # Criar o arquivo ZIP
           zip -r process_lambda_function.zip .
           cd ../../
@@ -43,9 +40,7 @@ jobs:
 
       # Listar os arquivos no ZIP
       - name: List files in ZIP
-        run: |
-          unzip -l lambda/process/process_lambda_function.zip
-          unzip -l ffmpeg.zip
+        run: unzip -l lambda/process/process_lambda_function.zip
 
       # Terraform Init
       - name: Terraform Init
