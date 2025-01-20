@@ -35,7 +35,7 @@ jobs:
           mkdir -p layer/ffmpeg
           cd layer/ffmpeg
           wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-          tar -xf ffmpeg-release-amd64-static.tar.xz
+          tar -xvf ffmpeg-release-amd64-static.tar.xz --strip-components=1
           zip -r ffmpeg.zip .
           cd ../../
 
