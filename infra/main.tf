@@ -4,7 +4,7 @@ provider "aws" {
 
 # Recurso da camada Lambda
 resource "aws_lambda_layer_version" "ffmpeg_layer" {
-  filename            = "../layer/ffmpeg/ffmpeg.zip"
+  filename            = "../ffmpeg.zip"
   layer_name          = "ffmpeg_layer"
   compatible_runtimes = ["python3.8"]
 }
