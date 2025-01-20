@@ -24,7 +24,7 @@ jobs:
           cd lambda/process
 
           # Instalar o FFmpeg
-          wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
+          wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz.md5
           tar xf ffmpeg-release-64bit-static.tar.xz
           
           # Instalar dependências diretamente no diretório
