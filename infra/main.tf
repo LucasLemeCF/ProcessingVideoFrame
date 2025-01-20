@@ -44,10 +44,12 @@ resource "aws_iam_policy" "lambda_email_policy" {
       {
         "Effect" : "Allow",
         "Action" : [
-          "ses:SendEmail",
-          "ses:SendRawEmail"
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:PutObject",
+          "s3:PutObjectAcl"
         ],
-        "Resource" : "arn:aws:ses:us-east-1:440744219680:identity/*"
+        "Resource" : "arn:aws:s3:::*"
       }
     ]
   })
