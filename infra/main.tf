@@ -9,6 +9,7 @@ resource "aws_lambda_function" "register_user" {
   handler = "process.lambda_handler" # Atualizado para o handler da função de procesamento
   runtime = "python3.11"
   role    = aws_iam_role.lambda_process_role.arn
+  timeout = 900 # Definir o tempo de execução para 15 minutos
 
   # Caminho para o código da função Lambda.
   filename         = "../lambda/process/process_lambda_function.zip"
