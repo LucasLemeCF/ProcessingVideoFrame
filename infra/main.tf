@@ -53,9 +53,10 @@ resource "aws_iam_policy" "lambda_email_policy" {
           "s3:GetObject",
           "s3:DeleteObject",
           "s3:PutObject",
-          "s3:PutObjectAcl"
+          "s3:PutObjectAcl",
+          "lambda:GetLayerVersion"
         ],
-        "Resource" : "arn:aws:s3:::*"
+        "Resource" : "*"
       }
     ]
   })
