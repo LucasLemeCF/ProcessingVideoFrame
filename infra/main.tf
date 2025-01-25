@@ -34,10 +34,10 @@ resource "aws_iam_role" "lambda_process_role" {
   })
 }
 
-# Política de Permissões de envio de email para Lambda
+# Política de Permissões de acesso ao S3
 resource "aws_iam_policy" "lambda_email_policy" {
   name        = "lambda_email_policy"
-  description = "Permissões necessárias para a Lambda enviar emails"
+  description = "Permissões necessárias para a Lambda acessar o S3"
 
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -56,9 +56,35 @@ resource "aws_iam_policy" "lambda_email_policy" {
   })
 }
 
-# Anexar a política à role da Lambda
+# Política de Permissão para SQS
+resource "aws_iam_policy" "lambda_sqs_send_policy" {
+  name        = "lambda_sqs_policy"
+  description = "Permissões para a Lambda acessar a fila SQS"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        "Resource" : "arn:aws:sqs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.sqs_queue_name}"
+      }
+    ]
+  })
+}
+
+# Anexar a política do S3 à role da Lambda
 resource "aws_iam_policy_attachment" "lambda_process_attachment" {
   name       = "lambda-policy-attachment"
   roles      = [aws_iam_role.lambda_process_role.name]
   policy_arn = aws_iam_policy.lambda_email_policy.arn
+}
+
+# Anexar a política de SQS à role da Lambda
+resource "aws_iam_role_policy_attachment" "lambda_sqs_policy_process_attachment" {
+  role       = aws_iam_role.lambda_sendemail_role.name
+  policy_arn = aws_iam_policy.lambda_sqs_send_policy.arn
 }

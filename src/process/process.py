@@ -7,14 +7,16 @@ import os
 import zipfile
 import boto3
 import pyshorteners
-import requests
 from botocore.exceptions import NoCredentialsError
+import logging
 
 s3_client = boto3.client('s3')
 bucket_name = 'lucas-leme-teste'
-email_sender = "videoframeprofiap@gmail.com"
-email_api_key = "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"
-url_smtp = "https://api.brevo.com/v3/smtp/email"
+queue_url = 'https://sqs.us-east-1.amazonaws.com/440744219680/VideoFrameProSend'
+
+# Configuração do logger
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     for message in event['Records']:
@@ -32,7 +34,7 @@ def process_message(message):
     try:
         response = process_frames(body_message)
     except Exception as err:
-        print("An error occurred")
+        logger.info("An error occurred")
         raise err
     
     return response
@@ -57,15 +59,10 @@ def process_frames(body_message):
 
         long_url = generate_url(bucket_name, output_zip_key)
         url_download = shorten_url(long_url)
-        
-        send_email(to_address, url_download)
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps({ 
-                'message': 'Processing completed successfully!'
-            })
-        }
+        logger.info(f"url_download: {url_download}")
+        
+        send_email_sucesso(to_address, url_download)
     else :
         return {
             'statusCode': 400,
@@ -77,16 +74,16 @@ def process_frames(body_message):
 def download_from_s3(bucket_name, object_key, download_path):
     try:
         s3_client.download_file(bucket_name, object_key, download_path)
-        print(f"Downloaded {object_key} from S3 bucket {bucket_name}")
+        logger.info(f"Downloaded {object_key} from S3 bucket {bucket_name}")
     except NoCredentialsError:
-        print("Credentials not available")
+        logger.info("Credentials not available")
 
 def upload_to_s3(bucket_name, output_zip_key, file_path):
     try:
         s3_client.upload_file(file_path, bucket_name, output_zip_key)
-        print(f"Uploaded {file_path} to S3 bucket {bucket_name}")
+        logger.info(f"Uploaded {file_path} to S3 bucket {bucket_name}")
     except NoCredentialsError:
-        print("Credentials not available")
+        logger.info("Credentials not available")
 
 def extract_frames(lambda_video_path, output_folder, frame_rate):
     if not os.path.exists(output_folder):
@@ -99,7 +96,7 @@ def create_zip(output_folder, zip_path):
         for root, _, files in os.walk(output_folder):
             for file in files:
                 zipf.write(os.path.join(root, file), file)
-    print(f"Created zip file {zip_path}")
+    logger.info(f"Created zip file {zip_path}")
 
 def generate_url(bucket_name, object_key):
     expiration=3600
@@ -108,7 +105,7 @@ def generate_url(bucket_name, object_key):
             Params={'Bucket': bucket_name, 'Key': object_key},
             ExpiresIn=expiration)
     except NoCredentialsError:
-        print("Credentials not available")
+        logger.info("Credentials not available")
         return None
     return response
 
@@ -117,52 +114,39 @@ def shorten_url(long_url):
     short_url = s.tinyurl.short(long_url)
     return short_url
 
-def send_email(destinatario, url_download):
-    headers = {
-        "api-key": email_api_key,
-        "Content-Type": "application/json"
+def send_email_sucesso(to_address, url_download):
+    message_body = { 
+        "status": "sucesso", 
+        "to_address": to_address,
+        "frame_rate": url_download
     }
 
-    data = {
-        "sender": {"email": email_sender},
-        "to": [{"email": destinatario}],
-        "subject": "Video Frame Pro",
-        "htmlContent": "<html><body><h1>Link para download do .zip: {}</h1></body></html>".format(url_download)
+    response = sqs.send_message(
+        QueueUrl=queue_url,
+        MessageBody=json.dumps(message_body)
+    )
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({ 
+            'message': 'Processing completed successfully!'
+        })
     }
 
-    try:
-        response = requests.post(url_smtp, headers=headers, json=data)
-
-        if response.status_code in [202, 201]:
-            print("✅ E-mail enviado com sucesso!")
-        else:
-            print(f"❌ Erro ao enviar o e-mail: {response.status_code}")
-            print(response.text)
-
-    except Exception as e:
-        print("❌ Erro na requisição:", str(e))
-
-def send_email_error(destinatario):
-    headers = {
-        "api-key": email_api_key,
-        "Content-Type": "application/json"
+def send_email_error(to_address):
+    message_body = {
+        "status": "erro",
+        "to_address": to_address
     }
 
-    data = {
-        "sender": {"email": email_sender},
-        "to": [{"email": destinatario}],
-        "subject": "Video Frame Pro",
-        "htmlContent": "<html><body><h1>Erro ao processar o video</h1></body></html>"
+    response = sqs.send_message(
+        QueueUrl=queue_url,
+        MessageBody=json.dumps(message_body)
+    )
+
+    return {
+        'statusCode': 500,
+        'body': json.dumps({ 
+            'message': 'Error processing the frames'
+        })
     }
-
-    try:
-        response = requests.post(url_smtp, headers=headers, json=data)
-
-        if response.status_code in [202, 201]:
-            print("✅ E-mail de erro enviado.")
-        else:
-            print(f"❌ Erro ao enviar o e-mail de erro: {response.status_code}")
-            print(response.text)
-
-    except Exception as e:
-        print("❌ Erro na requisição:", str(e))
