@@ -12,15 +12,17 @@ import logging
 
 s3_client = boto3.client('s3')
 bucket_name = 'lucas-leme-teste'
+sqs = boto3.client('sqs', region_name='us-east-1')
 queue_url = 'https://sqs.us-east-1.amazonaws.com/440744219680/VideoFrameProSend'
 
-# Configuração do logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     for message in event['Records']:
         response = process_message(message)
+
+        logger.info(f"response: {response}")
 
         if not response['statusCode'] in [200, 201, 202]:
             to_address = message['body']['to_address']
@@ -62,7 +64,9 @@ def process_frames(body_message):
 
         logger.info(f"url_download: {url_download}")
         
-        send_email_sucesso(to_address, url_download)
+        response = send_email_sucesso(to_address, url_download)
+
+        return response
     else :
         return {
             'statusCode': 400,
@@ -118,13 +122,15 @@ def send_email_sucesso(to_address, url_download):
     message_body = { 
         "status": "sucesso", 
         "to_address": to_address,
-        "frame_rate": url_download
+        "url_download": url_download
     }
 
-    response = sqs.send_message(
+    sqs.send_message(
         QueueUrl=queue_url,
         MessageBody=json.dumps(message_body)
     )
+
+    logger.info(f"Body: {message_body}")
 
     return {
         'statusCode': 200,
@@ -139,10 +145,12 @@ def send_email_error(to_address):
         "to_address": to_address
     }
 
-    response = sqs.send_message(
+    sqs.send_message(
         QueueUrl=queue_url,
         MessageBody=json.dumps(message_body)
     )
+
+    logger.info(f"Body: {message_body}")
 
     return {
         'statusCode': 500,

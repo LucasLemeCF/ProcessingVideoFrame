@@ -68,7 +68,9 @@ resource "aws_iam_policy" "lambda_sqs_send_policy" {
         Effect = "Allow",
         Action = [
           "sqs:ReceiveMessage",
-          "sqs:GetQueueAttributes"
+          "sqs:GetQueueAttributes",
+          "sqs:sendmessage",
+          "sqs:DeleteMessage"
         ],
         "Resource" : "arn:aws:sqs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.sqs_queue_name}"
       }
